@@ -1,493 +1,225 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TicTacToe</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TicTacToe</title>
 
-  <!-- ✅ Favicon texte "TicTacToe" (remplace l’emoji planète) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect rx='28' width='128' height='128' fill='%230b1220'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='34' font-family='Arial' fill='%23ffffff'%3ETwitter?%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect rx='28' width='128' height='128' fill='%230b1220'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='36' font-family='Arial' fill='%23ffffff'%3ETwitter%3C/text%3E%3C/svg%3E">
 
-  <style>
-    :root{
-      --bg1:#0f172a;
-      --bg2:#111827;
-      --card: rgba(255,255,255,.08);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.72);
-      --stroke: rgba(255,255,255,.18);
-      --shadow: 0 18px 55px rgba(0,0,0,.45);
-      --radius: 22px;
-      --gap: 12px;
-      --cell: 112px;
-    }
-
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 26px;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      color: var(--text);
-      background:
-        radial-gradient(1200px 600px at 10% 10%, rgba(99,102,241,.35), transparent 55%),
-        radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.22), transparent 55%),
-        radial-gradient(1000px 700px at 50% 100%, rgba(236,72,153,.18), transparent 55%),
-        linear-gradient(160deg, var(--bg1), var(--bg2));
-    }
-
-    .app{
-      width: min(420px, 100%);
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, var(--card), rgba(255,255,255,.05));
-      border: 1px solid var(--stroke);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      backdrop-filter: blur(10px);
-      position: relative;
-    }
-
-    /* ✅ Le jeu est non-interactif tant qu’on n’a pas fini PLAY + niveau */
-    .locked{
-      pointer-events: none;
-      filter: blur(1px);
-      opacity: .85;
-    }
-
-    .top{
-      padding: 18px 18px 12px;
-      display:flex;
-      gap: 14px;
-      align-items:center;
-      justify-content:space-between;
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
-    }
-
-    .brand{ display:flex; flex-direction:column; gap: 2px; }
-    .brand h1{ font-size: 18px; margin:0; letter-spacing:.2px; }
-    .brand .sub{ font-size: 12px; color: var(--muted); }
-
-    .badge{
-      font-size:12px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.16);
-      color: var(--text);
-      display:flex;
-      align-items:center;
-      gap: 8px;
-      user-select:none;
-    }
-    .dot{
-      width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(34,197,94,.95);
-      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
-    }
-
-    .content{ padding: 16px 18px 18px; }
-    #status{
-      min-height: 28px;
-      font-size: 15px;
-      color: var(--muted);
-      margin-bottom: 14px;
-    }
-    #status b{ color: var(--text); }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--gap);
-      padding: 12px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.12);
-    }
-
-    button.cell{
-      height: var(--cell);
-      width: 100%;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-      color: var(--text);
-      font-size: 54px;
-      cursor: pointer;
-      box-shadow: 0 10px 18px rgba(0,0,0,.22);
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
-      display:flex; align-items:center; justify-content:center;
-      user-select:none;
-    }
-    button.cell:hover{
-      transform: translateY(-2px);
-      border-color: rgba(255,255,255,.26);
-      background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.07));
-    }
-    button.cell:active{ transform: translateY(0px) scale(.99); }
-    button.cell:disabled{ opacity: .65; cursor:not-allowed; transform:none; }
-
-    .actions{
-      display:flex; gap: 10px; margin-top: 14px;
-    }
-    .btn{
-      flex:1;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.10);
-      color: var(--text);
-      cursor:pointer;
-      font-weight: 700;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
-    }
-    .btn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.14);
-      border-color: rgba(255,255,255,.26);
-    }
-    .btn.primary{
-      background: linear-gradient(90deg, rgba(99,102,241,.85), rgba(236,72,153,.75));
-      border-color: rgba(255,255,255,.22);
-    }
-
-    /* ✅ Overlays (PLAY + Niveau) */
-    .overlayBack{
-      position: fixed;
-      inset: 0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 18px;
-      background: rgba(0,0,0,.62);
-      z-index: 9999; /* au-dessus de tout */
-      opacity: 1;
-      transition: opacity .18s ease;
-    }
-    .overlayBack.hide{
-      opacity: 0;
-      pointer-events: none;
-    }
-    .overlayCard{
-      width: min(520px, 100%);
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(15, 23, 42, .80);
-      backdrop-filter: blur(14px);
-      box-shadow: var(--shadow);
-      padding: 18px;
-      transform: scale(1);
-      transition: transform .18s ease, opacity .18s ease;
-    }
-    .overlayBack.hide .overlayCard{
-      transform: scale(.96);
-    }
-
-    /* Écran PLAY */
-    .hero{
-      text-align:center;
-      padding: 10px 6px 6px;
-    }
-    .heroTitle{
-      font-size: 40px;
-      margin: 8px 0 6px;
-      letter-spacing: .6px;
-      font-weight: 900;
-    }
-    .heroSub{
-      margin: 0 0 16px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .logoRow{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap: 10px;
-      margin: 8px 0 18px;
-    }
-    .logoBox{
-      width: 86px; height: 64px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.08);
-      display:flex; align-items:center; justify-content:center;
-      font-size: 44px;
-      font-weight: 900;
-      box-shadow: 0 10px 18px rgba(0,0,0,.22);
-    }
-    .playBtn{
-      width: 100%;
-      padding: 14px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: linear-gradient(90deg, rgba(34,197,94,.88), rgba(99,102,241,.85));
-      color: #0b1220;
-      font-weight: 900;
-      font-size: 16px;
-      cursor:pointer;
-      transition: transform .08s ease;
-    }
-    .playBtn:hover{ transform: translateY(-1px); }
-
-    /* Modal niveau */
-    .levels{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .levelBtn{
-      padding: 12px 10px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.08);
-      color: var(--text);
-      cursor:pointer;
-      font-weight: 900;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
-      text-align:center;
-    }
-    .levelBtn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.12);
-      border-color: rgba(255,255,255,.28);
-    }
-    .levelHint{
-      display:block;
-      margin-top: 6px;
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    @media (max-width: 420px){
-      :root{ --cell: 96px; }
-      .levels{ grid-template-columns: 1fr; }
-    }
-  </style>
+<style>
+:root{
+--bg:#0f172a;
+--card:rgba(255,255,255,.08);
+--stroke:rgba(255,255,255,.18);
+--text:#fff;
+--muted:rgba(255,255,255,.7);
+--radius:18px;
+--cell:100px;
+}
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:system-ui,Arial;
+background:linear-gradient(160deg,#020617,#020617);
+color:var(--text);
+display:flex;
+justify-content:center;
+padding:20px;
+}
+.app{
+max-width:420px;
+width:100%;
+background:var(--card);
+border:1px solid var(--stroke);
+border-radius:var(--radius);
+padding:16px;
+backdrop-filter:blur(10px);
+}
+.locked{pointer-events:none;opacity:.7}
+h1{text-align:center;margin:4px 0 10px}
+.grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+}
+.cell{
+height:var(--cell);
+font-size:48px;
+border-radius:14px;
+border:1px solid var(--stroke);
+background:rgba(255,255,255,.1);
+color:white;
+cursor:pointer;
+}
+.cell:disabled{opacity:.5}
+.actions{display:flex;gap:10px;margin-top:12px}
+.btn{
+flex:1;
+padding:10px;
+border-radius:14px;
+border:1px solid var(--stroke);
+background:rgba(255,255,255,.15);
+color:white;
+cursor:pointer;
+font-weight:700;
+}
+.overlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.7);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:999;
+transition:.2s;
+}
+.hide{opacity:0;pointer-events:none}
+.card{
+background:#020617;
+border-radius:18px;
+border:1px solid var(--stroke);
+padding:20px;
+max-width:360px;
+width:100%;
+text-align:center;
+}
+.play{font-size:32px;font-weight:900;margin:10px 0}
+.levels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.level{padding:10px;border-radius:12px;border:1px solid var(--stroke);background:#020617;color:white;cursor:pointer}
+.info{
+margin-top:18px;
+font-size:13px;
+color:var(--muted);
+line-height:1.6;
+}
+.info h2{color:white;font-size:16px;margin-top:14px}
+details{margin-top:10px}
+summary{cursor:pointer;font-weight:700}
+@media(max-width:420px){
+.levels{grid-template-columns:1fr}
+}
+</style>
 </head>
 
 <body>
 
-  <!-- ✅ Écran d’accueil PLAY obligatoire -->
-  <div class="overlayBack" id="startOverlay">
-    <div class="overlayCard">
-      <div class="hero">
-        <div style="display:inline-block; font-size:12px; font-weight:900; letter-spacing:.8px;
-                    padding:6px 10px; border-radius:999px;
-                    background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.16);">
-          PLAY
-        </div>
+<!-- PLAY SCREEN -->
+<div class="overlay" id="start">
+<div class="card">
+<div class="play">TIC TAC TOE</div>
+<p>Click PLAY to start</p>
+<button class="btn" onclick="startGame()">▶ PLAY</button>
+</div>
+</div>
 
-        <div class="heroTitle">TIC TAC TOE</div>
-        <p class="heroSub">Clique sur PLAY pour commencer</p>
+<!-- LEVEL SELECT -->
+<div class="overlay hide" id="levels">
+<div class="card">
+<h2>Choose difficulty</h2>
+<div class="levels">
+<button class="level" onclick="pick('easy')">Easy</button>
+<button class="level" onclick="pick('medium')">Medium</button>
+<button class="level" onclick="pick('hard')">Hard</button>
+</div>
+</div>
+</div>
 
-        <div class="logoRow" aria-hidden="true">
-          <div class="logoBox">X</div>
-          <div class="logoBox">O</div>
-          <div class="logoBox">X</div>
-        </div>
+<!-- GAME -->
+<div class="app locked" id="game">
+<h1>Tic Tac Toe</h1>
+<div id="status"></div>
+<div class="grid" id="grid"></div>
 
-        <button class="playBtn" id="playBtn">▶ PLAY</button>
-      </div>
-    </div>
-  </div>
+<div class="actions">
+<button class="btn" onclick="reset()">Restart</button>
+<button class="btn" onclick="change()">Change level</button>
+</div>
 
-  <!-- ✅ Choix du niveau (après PLAY) -->
-  <div class="overlayBack hide" id="difficultyOverlay" aria-hidden="true">
-    <div class="overlayCard">
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
-        <div>
-          <div style="font-size:18px; font-weight:900; margin-bottom:4px;">Choisis ton niveau</div>
-          <div style="color:var(--muted); font-size:13px;">
-            Tu joues <b>X</b>. L’IA joue <b>O</b>.
-          </div>
-        </div>
-      </div>
+<!-- INFO TEXT -->
+<div class="info">
+<h2>Tic Tac Toe Online</h2>
+<p>
+Tic Tac Toe is a classic two-player strategy game that is easy to learn but highly effective at developing logical thinking and strategic reasoning.
+Known as <b>Noughts and Crosses</b> in some regions, the game encourages pattern recognition, anticipation, and smart decision-making.
+</p>
 
-      <div class="levels">
-        <button class="levelBtn" data-level="easy">
-          Facile
-          <span class="levelHint">IA au hasard</span>
-        </button>
-        <button class="levelBtn" data-level="medium">
-          Moyen
-          <span class="levelHint">Gagne / bloque</span>
-        </button>
-        <button class="levelBtn" data-level="hard">
-          Difficile
-          <span class="levelHint">Minimax (imbattable)</span>
-        </button>
-      </div>
-    </div>
-  </div>
+<p>
+More than a simple pastime, Tic Tac Toe helps sharpen problem-solving skills, memory, and cognitive flexibility.
+Whether played casually or competitively, it provides a fun way to train the brain.
+</p>
 
-  <!-- ✅ Jeu -->
-  <div class="app" id="app">
-    <div class="top">
-      <div class="brand">
-        <h1>TicTacToe</h1>
-        <div class="sub">PLAY → Niveau → Jeu</div>
-      </div>
-      <div class="badge">
-        <span class="dot"></span>
-        <span id="badgeText">En attente…</span>
-      </div>
-    </div>
+<h2>Game Tips</h2>
+<ul>
+<li><b>Start with a corner</b> to create more winning paths.</li>
+<li><b>Control the center</b> if available.</li>
+<li><b>Create a double threat</b> to force your opponent into mistakes.</li>
+</ul>
 
-    <div class="content">
-      <div id="status"></div>
-      <div class="grid" id="grid"></div>
+<h2>How to Play</h2>
+<ul>
+<li>Click PLAY, then select a difficulty.</li>
+<li>Players take turns placing their symbol.</li>
+<li>First to align three symbols wins.</li>
+<li>If the grid is full, the game ends in a draw.</li>
+</ul>
 
-      <div class="actions">
-        <button class="btn primary" id="reset">Recommencer</button>
-        <button class="btn" id="changeLevel">Changer niveau</button>
-      </div>
-    </div>
-  </div>
+<details>
+<summary>FAQ</summary>
+<p><b>Can Tic Tac Toe end in a draw?</b> Yes, when all squares are filled without a winner.</p>
+<p><b>Is Tic Tac Toe solved?</b> Yes. Perfect play always results in a draw.</p>
+<p><b>Best first move?</b> Center or corner.</p>
+</details>
+
+<p style="margin-top:10px;font-size:12px">
+Last updated: Saturday, January 17, 2026
+</p>
+</div>
+
+</div>
 
 <script>
-  let board = Array(9).fill("");
-  let gameOver = false;
-  let difficulty = null;
-  let started = false;
+let board=Array(9).fill("");
+let game=false;
+let level=null;
+const grid=document.getElementById("grid");
+const status=document.getElementById("status");
 
-  const appEl = document.getElementById("app");
-  const grid = document.getElementById("grid");
-  const statusEl = document.getElementById("status");
-  const badgeText = document.getElementById("badgeText");
-
-  const resetBtn = document.getElementById("reset");
-  const changeLevelBtn = document.getElementById("changeLevel");
-
-  const startOverlay = document.getElementById("startOverlay");
-  const difficultyOverlay = document.getElementById("difficultyOverlay");
-  const playBtn = document.getElementById("playBtn");
-  const levelButtons = difficultyOverlay.querySelectorAll("button[data-level]");
-
-  function setStatus(html){ statusEl.innerHTML = html; }
-
-  function difficultyLabel(d){
-    if (d === "easy") return "Facile";
-    if (d === "medium") return "Moyen";
-    if (d === "hard") return "Difficile";
-    return "";
-  }
-
-  function lockGame(lock){
-    appEl.classList.toggle("locked", lock);
-  }
-
-  function hideOverlay(el){
-    el.classList.add("hide");
-    el.setAttribute("aria-hidden", "true");
-  }
-
-  function showOverlay(el){
-    el.classList.remove("hide");
-    el.setAttribute("aria-hidden", "false");
-  }
-
-  function render(){
-    grid.innerHTML = "";
-    for (let i = 0; i < 9; i++){
-      const btn = document.createElement("button");
-      btn.className = "cell";
-      btn.textContent = board[i];
-      btn.disabled = gameOver || board[i] !== "" || !started || !difficulty;
-      btn.addEventListener("click", () => onClick(i));
-      grid.appendChild(btn);
-    }
-  }
-
-  async function onClick(i){
-    if (!started || !difficulty) return;
-    if (gameOver || board[i] !== "") return;
-
-    try{
-      setStatus(`Niveau: <b>${difficultyLabel(difficulty)}</b> — Coup en cours…`);
-      const resp = await fetch("/move", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ board, index: i, difficulty })
-      });
-      const data = await resp.json();
-      if (!resp.ok){
-        setStatus(`Erreur: ${data.error || "problème serveur"}`);
-        return;
-      }
-
-      board = data.board;
-      const w = data.winner;
-
-      if (w === "X"){ gameOver = true; setStatus(`✅ Tu as gagné ! (Niveau <b>${difficultyLabel(difficulty)}</b>)`); }
-      else if (w === "O"){ gameOver = true; setStatus(`😈 L’IA a gagné ! (Niveau <b>${difficultyLabel(difficulty)}</b>)`); }
-      else if (w === "DRAW"){ gameOver = true; setStatus(`🤝 Match nul ! (Niveau <b>${difficultyLabel(difficulty)}</b>)`); }
-      else { setStatus(`Niveau: <b>${difficultyLabel(difficulty)}</b> — À toi : <b>X</b> (IA = O)`); }
-
-      render();
-    } catch(e){
-      setStatus("Erreur réseau/serveur.");
-    }
-  }
-
-  function reset(keepLevel=true){
-    board = Array(9).fill("");
-    gameOver = false;
-    render();
-
-    if (!keepLevel){
-      difficulty = null;
-      badgeText.textContent = "Choisis un niveau";
-      setStatus("");
-      lockGame(true);
-      showOverlay(difficultyOverlay);
-      return;
-    }
-
-    if (difficulty){
-      badgeText.textContent = `Niveau: ${difficultyLabel(difficulty)}`;
-      setStatus(`Niveau: <b>${difficultyLabel(difficulty)}</b> — À toi : <b>X</b> (IA = O)`);
-    } else {
-      badgeText.textContent = "Choisis un niveau";
-      setStatus("");
-    }
-  }
-
-  // Flow: PLAY -> Niveau -> Jeu
-  playBtn.addEventListener("click", () => {
-    started = true;
-    hideOverlay(startOverlay);
-    showOverlay(difficultyOverlay);
-    lockGame(true);
-    badgeText.textContent = "Choisis un niveau";
-  });
-
-  levelButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      difficulty = btn.dataset.level;
-
-      // petite animation (fade) avant de libérer le jeu
-      hideOverlay(difficultyOverlay);
-      lockGame(false);
-
-      badgeText.textContent = `Niveau: ${difficultyLabel(difficulty)}`;
-      reset(true);
-    });
-  });
-
-  resetBtn.addEventListener("click", () => reset(true));
-  changeLevelBtn.addEventListener("click", () => reset(false));
-
-  // Init: jeu bloqué tant que PLAY pas cliqué
-  lockGame(true);
-  badgeText.textContent = "Clique PLAY";
-  setStatus("");
-  render();
+function startGame(){
+document.getElementById("start").classList.add("hide");
+document.getElementById("levels").classList.remove("hide");
+}
+function pick(l){
+level=l;
+document.getElementById("levels").classList.add("hide");
+document.getElementById("game").classList.remove("locked");
+game=true;
+render();
+}
+function render(){
+grid.innerHTML="";
+board.forEach((v,i)=>{
+const b=document.createElement("button");
+b.className="cell";
+b.textContent=v;
+b.disabled=!game||v;
+b.onclick=()=>move(i);
+grid.appendChild(b);
+});
+}
+function move(i){
+if(board[i])return;
+board[i]="X";
+render();
+}
+function reset(){board=Array(9).fill("");render();}
+function change(){
+game=false;
+document.getElementById("levels").classList.remove("hide");
+document.getElementById("game").classList.add("locked");
+}
+render();
 </script>
+
 </body>
 </html>
