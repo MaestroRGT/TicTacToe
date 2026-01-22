@@ -3,84 +3,101 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tic-Tac-Toe</title>
+  <title>Tic-Tac-Toe (3 niveaux)</title>
   <style>
     body { font-family: system-ui, Arial; display:flex; justify-content:center; padding:40px; }
     .wrap { width: 360px; }
     h1 { margin: 0 0 12px; }
-    #status { margin: 8px 0 16px; font-size: 18px; }
+    #status { margin: 8px 0 16px; font-size: 18px; min-height: 24px; }
+
     .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     button.cell{
-      height: 110px;
-      font-size: 52px;
-      border-radius: 14px;
-      border: 2px solid #111;
-      background: #fff;
-      cursor: pointer;
+      height: 110px; font-size: 52px; border-radius: 14px;
+      border: 2px solid #111; background: #fff; cursor: pointer;
     }
     button.cell:disabled { opacity: 0.6; cursor:not-allowed; }
-    .win { outline: 5px solid #111; }
+
     .row { display:flex; gap:10px; align-items:center; margin-top: 14px; }
     .btn {
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 2px solid #111;
-      background: #111;
-      color: #fff;
-      cursor: pointer;
-      font-weight: 700;
+      padding: 10px 12px; border-radius: 10px; border: 2px solid #111;
+      background: #111; color: #fff; cursor: pointer; font-weight: 700;
+      flex: 1;
     }
+    .ghost { background:#fff; color:#111; }
+
+    /* Difficulty modal */
+    .modalBack {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      display:flex; justify-content:center; align-items:center; padding: 20px;
+    }
+    .modal {
+      width: min(420px, 100%);
+      background: #fff; border: 2px solid #111; border-radius: 16px;
+      padding: 18px;
+    }
+    .modal h2 { margin: 0 0 8px; }
+    .modal p { margin: 0 0 14px; opacity: .85; }
+    .levels { display:flex; gap:10px; }
+    .levels button { flex:1; }
   </style>
 </head>
 <body>
+  <!-- Difficulty chooser -->
+  <div class="modalBack" id="difficultyModal">
+    <div class="modal">
+      <h2>Choisis un niveau</h2>
+      <p>Tu joues <b>X</b>. L’IA joue <b>O</b>.</p>
+      <div class="levels">
+        <button class="btn ghost" data-level="easy">Facile</button>
+        <button class="btn ghost" data-level="medium">Moyen</button>
+        <button class="btn ghost" data-level="hard">Difficile</button>
+      </div>
+    </div>
+  </div>
+
   <div class="wrap">
     <h1>Tic-Tac-Toe</h1>
-    <div id="status">Au tour de : <b>X</b></div>
+    <div id="status"></div>
 
     <div class="grid" id="grid"></div>
 
     <div class="row">
       <button class="btn" id="reset">Recommencer</button>
+      <button class="btn ghost" id="changeLevel">Changer niveau</button>
     </div>
   </div>
 
 <script>
   let board = Array(9).fill("");
   let gameOver = false;
-  let winCells = [];
-  let turn = "X";
+  let difficulty = null; // "easy" | "medium" | "hard"
 
   const grid = document.getElementById("grid");
   const statusEl = document.getElementById("status");
   const resetBtn = document.getElementById("reset");
+  const changeLevelBtn = document.getElementById("changeLevel");
 
-  function setStatus(html) { statusEl.innerHTML = html; }
+  const modal = document.getElementById("difficultyModal");
+  const levelButtons = modal.querySelectorAll("button[data-level]");
 
-  function checkWinner() {
-    const lines = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
-    for (const [a,b,c] of lines) {
-      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-        gameOver = true;
-        winCells = [a,b,c];
-        setStatus(`✅ <b>${board[a]}</b> a gagné !`);
-        return;
-      }
-    }
-    if (board.every(x => x !== "")) {
-      gameOver = true;
-      setStatus("🤝 Match nul !");
-    }
+  function setStatus(html){ statusEl.innerHTML = html; }
+
+  function showModal(show) {
+    modal.style.display = show ? "flex" : "none";
+  }
+
+  function difficultyLabel(d) {
+    if (d === "easy") return "Facile";
+    if (d === "medium") return "Moyen";
+    if (d === "hard") return "Difficile";
+    return "";
   }
 
   function render() {
     grid.innerHTML = "";
     for (let i = 0; i < 9; i++) {
       const btn = document.createElement("button");
-      btn.className = "cell" + (winCells.includes(i) ? " win" : "");
+      btn.className = "cell";
       btn.textContent = board[i];
       btn.disabled = gameOver || board[i] !== "";
       btn.addEventListener("click", () => onClick(i));
@@ -88,27 +105,63 @@
     }
   }
 
-  function onClick(i) {
-    if (gameOver || board[i] !== "") return;
-    board[i] = turn;
-    checkWinner();
-    if (!gameOver) {
-      turn = (turn === "X") ? "O" : "X";
-      setStatus(`Au tour de : <b>${turn}</b>`);
+  async function onClick(i) {
+    if (!difficulty) {
+      showModal(true);
+      return;
     }
-    render();
+    if (gameOver || board[i] !== "") return;
+
+    try {
+      setStatus(`Niveau: <b>${difficultyLabel(difficulty)}</b> — Coup en cours…`);
+      const resp = await fetch("/move", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ board, index: i, difficulty })
+      });
+      const data = await resp.json();
+      if (!resp.ok) { setStatus(`Erreur: ${data.error}`); return; }
+
+      board = data.board;
+      const w = data.winner;
+
+      if (w === "X") { gameOver = true; setStatus(`✅ Tu as gagné ! (Niveau: <b>${difficultyLabel(difficulty)}</b>)`); }
+      else if (w === "O") { gameOver = true; setStatus(`😈 L’IA a gagné ! (Niveau: <b>${difficultyLabel(difficulty)}</b>)`); }
+      else if (w === "DRAW") { gameOver = true; setStatus(`🤝 Match nul ! (Niveau: <b>${difficultyLabel(difficulty)}</b>)`); }
+      else { setStatus(`Niveau: <b>${difficultyLabel(difficulty)}</b> — À toi : <b>X</b> (IA = O)`); }
+
+      render();
+    } catch (e) {
+      setStatus("Erreur réseau/serveur.");
+    }
   }
 
-  function reset() {
+  function reset(keepLevel=true) {
     board = Array(9).fill("");
     gameOver = false;
-    winCells = [];
-    turn = "X";
-    setStatus("Au tour de : <b>X</b>");
     render();
+    if (!keepLevel) difficulty = null;
+    if (difficulty) {
+      setStatus(`Niveau: <b>${difficultyLabel(difficulty)}</b> — À toi : <b>X</b> (IA = O)`);
+    } else {
+      setStatus("");
+      showModal(true);
+    }
   }
 
-  resetBtn.addEventListener("click", reset);
+  resetBtn.addEventListener("click", () => reset(true));
+  changeLevelBtn.addEventListener("click", () => reset(false));
+
+  levelButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      difficulty = btn.dataset.level;
+      showModal(false);
+      reset(true);
+    });
+  });
+
+  // Start: force choice
+  showModal(true);
   render();
 </script>
 </body>
